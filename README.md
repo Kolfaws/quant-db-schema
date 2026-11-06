@@ -66,6 +66,9 @@ uv add --editable ../quant-db-schema
 uv add --editable ../quant-data-pipeline
 ```
 
+本包采用 `src/` 布局，`uv sync` 会以 editable 方式安装 `quant_schema`；
+测试通过 `pyproject.toml` 的 `pythonpath = ["src"]` 解析包。
+
 代码里：
 
 ```python

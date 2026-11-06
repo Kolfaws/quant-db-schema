@@ -16,3 +16,11 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = "quant_schema"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.pyright]
+extraPaths = ["src"]
