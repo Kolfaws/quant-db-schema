@@ -9,7 +9,7 @@
 数据库          组件 (component)            当前版本
 ============  =========================  ==================================
 market.duckdb   ``warehouse``              ``1.2.0``
-market.duckdb   ``factor``                 ``1.0.0``
+market.duckdb   ``factor``                 ``1.1.0``
 backtest.duckdb ``backtest``               ``1.0.0``
 ============  =========================  ==================================
 """
@@ -26,8 +26,40 @@ FACTOR_COMPONENT: Final[str] = "factor"
 BACKTEST_COMPONENT: Final[str] = "backtest"
 
 WAREHOUSE_SCHEMA_VERSION: Final[str] = "1.2.0"
-FACTOR_SCHEMA_VERSION: Final[str] = "1.0.0"
+FACTOR_SCHEMA_VERSION: Final[str] = "1.1.0"
 BACKTEST_SCHEMA_VERSION: Final[str] = "1.0.0"
+
+# 运行环境：正式库 / 测试库
+QUANT_ENVS: Final[tuple[str, ...]] = ("prod", "test")
+FACTOR_ENVS: Final[tuple[str, ...]] = ("prod", "test")
+
+# 因子域：量价、基本面、资金流、宏观
+FACTOR_DOMAIN_PRICE_VOLUME: Final[str] = "price_volume"
+FACTOR_DOMAIN_FUNDAMENTAL: Final[str] = "fundamental"
+FACTOR_DOMAIN_CAPITAL_FLOW: Final[str] = "capital_flow"
+FACTOR_DOMAIN_MACRO: Final[str] = "macro"
+FACTOR_DOMAINS: Final[tuple[str, ...]] = (
+    FACTOR_DOMAIN_PRICE_VOLUME,
+    FACTOR_DOMAIN_FUNDAMENTAL,
+    FACTOR_DOMAIN_CAPITAL_FLOW,
+    FACTOR_DOMAIN_MACRO,
+)
+
+# 因子频率
+FACTOR_FREQUENCIES: Final[tuple[str, ...]] = (
+    "daily",
+    "weekly",
+    "monthly",
+    "quarterly",
+    "event",
+)
+
+# 上线前验证状态
+FACTOR_VALIDATION_STATUSES: Final[tuple[str, ...]] = (
+    "pending",
+    "approved",
+    "rejected",
+)
 
 # ---------------------------------------------------------------------------
 # 公共表 / 字段
@@ -86,12 +118,18 @@ META_FACTOR_REGISTRY: Final[str] = "meta_factor_registry"
 FACT_FACTOR_DAILY: Final[str] = "fact_factor_daily"
 FACT_TRADABLE_FLAG: Final[str] = "fact_tradable_flag"
 FACT_FACTOR_QUALITY: Final[str] = "fact_factor_quality"
+META_FACTOR_PROFILE: Final[str] = "meta_factor_profile"
+META_FACTOR_VALIDATION: Final[str] = "meta_factor_validation"
+META_FACTOR_PROMOTION_LOG: Final[str] = "meta_factor_promotion_log"
 
 MARKET_FACTOR_TABLES: Final[tuple[str, ...]] = (
     META_FACTOR_REGISTRY,
     FACT_FACTOR_DAILY,
     FACT_TRADABLE_FLAG,
     FACT_FACTOR_QUALITY,
+    META_FACTOR_PROFILE,
+    META_FACTOR_VALIDATION,
+    META_FACTOR_PROMOTION_LOG,
 )
 
 MARKET_FACTOR_VIEWS: Final[tuple[str, ...]] = (
@@ -142,11 +180,21 @@ BT_RUN_METRICS_KEYS: Final[tuple[str, ...]] = (RUN_ID, "metric_name")
 BT_COMPUTE_LOG_KEYS: Final[tuple[str, ...]] = (RUN_ID,)
 META_SCHEMA_VERSION_KEYS: Final[tuple[str, ...]] = (COMPONENT,)
 META_INGEST_LOG_KEYS: Final[tuple[str, ...]] = ("table_name", "scope_key")
+META_FACTOR_PROFILE_KEYS: Final[tuple[str, ...]] = ("factor_id",)
+META_FACTOR_VALIDATION_KEYS: Final[tuple[str, ...]] = (
+    "factor_id",
+    "env",
+    "validated_at",
+)
+META_FACTOR_PROMOTION_KEYS: Final[tuple[str, ...]] = ("promotion_id",)
 
 #: 表名 -> 幂等键。写入层可直接查表，避免每个调用点重复声明。
 CONFLICT_KEYS: Final[dict[str, tuple[str, ...]]] = {
     META_SCHEMA_VERSION: META_SCHEMA_VERSION_KEYS,
     META_INGEST_LOG: META_INGEST_LOG_KEYS,
+    META_FACTOR_PROFILE: META_FACTOR_PROFILE_KEYS,
+    META_FACTOR_VALIDATION: META_FACTOR_VALIDATION_KEYS,
+    META_FACTOR_PROMOTION_LOG: META_FACTOR_PROMOTION_KEYS,
     BT_BENCHMARKS: BT_BENCHMARKS_KEYS,
     BT_BASELINES: BT_BASELINES_KEYS,
     BT_BASELINE_WEIGHTS: BT_BASELINE_WEIGHTS_KEYS,
