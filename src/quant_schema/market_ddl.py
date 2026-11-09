@@ -298,6 +298,51 @@ FACTOR_TABLES: Final[tuple[Table, ...]] = (
         constraints=("PRIMARY KEY (factor_id, trade_date)",),
         description="因子每日质量统计",
     ),
+    Table(
+        name=c.META_FACTOR_PROFILE,
+        columns=(
+            ("factor_id", "INTEGER NOT NULL"),
+            ("domain", "VARCHAR NOT NULL"),
+            ("frequency", "VARCHAR NOT NULL DEFAULT 'daily'"),
+            ("unit", "VARCHAR"),
+            ("source", "VARCHAR"),
+            ("owner", "VARCHAR"),
+            ("notes", "VARCHAR"),
+            ("created_at", "TIMESTAMPTZ NOT NULL DEFAULT now()"),
+            ("updated_at", "TIMESTAMPTZ NOT NULL DEFAULT now()"),
+        ),
+        constraints=("PRIMARY KEY (factor_id)",),
+        description="因子域/频率/来源等研究元数据（不存因子值）",
+    ),
+    Table(
+        name=c.META_FACTOR_VALIDATION,
+        columns=(
+            ("factor_id", "INTEGER NOT NULL"),
+            ("env", "VARCHAR NOT NULL DEFAULT 'test'"),
+            ("status", "VARCHAR NOT NULL"),
+            ("metrics_json", "VARCHAR"),
+            ("reviewer", "VARCHAR"),
+            ("notes", "VARCHAR"),
+            ("validated_at", "TIMESTAMPTZ NOT NULL DEFAULT now()"),
+        ),
+        constraints=("PRIMARY KEY (factor_id, env, validated_at)",),
+        description="因子上线前验证记录；promotion 只接受 approved",
+    ),
+    Table(
+        name=c.META_FACTOR_PROMOTION_LOG,
+        columns=(
+            ("promotion_id", "VARCHAR NOT NULL"),
+            ("factor_id", "INTEGER NOT NULL"),
+            ("source_env", "VARCHAR NOT NULL"),
+            ("target_env", "VARCHAR NOT NULL"),
+            ("rows_written", "BIGINT NOT NULL"),
+            ("status", "VARCHAR NOT NULL"),
+            ("promoted_at", "TIMESTAMPTZ NOT NULL DEFAULT now()"),
+            ("notes", "VARCHAR"),
+        ),
+        constraints=("PRIMARY KEY (promotion_id)",),
+        description="test -> prod 因子发布审计日志",
+    ),
 )
 
 # 注意：is_buyable OR is_sellable 会保留“可卖不可买”的涨停股；

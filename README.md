@@ -6,7 +6,7 @@ Quant 项目的 **schema 契约包**：只有常量与 DDL，没有数据库连�
 - Python 包名：`quant_schema`
 - 安装后的 distribution：`quant-db-schema`
 
-四个项目通过 editable 依赖共享同一份表结构定义：
+各项目通过 editable 依赖共享同一份表结构定义：
 
 ```text
 quant-data-pipeline      → market_ddl.py      建 market.duckdb（warehouse + factor）
@@ -39,10 +39,18 @@ quant-db-schema/
 | 数据库 | 组件 `meta_schema_version.component` | 当前版本 |
 | --- | --- | --- |
 | `market.duckdb` | `warehouse` | `1.2.0` |
-| `market.duckdb` | `factor` | `1.0.0` |
+| `market.duckdb` | `factor` | `1.1.0` |
 | `backtest.duckdb` | `backtest` | `1.0.0` |
 
 版本常量集中在 `constants.py`，各项目的 `init_*_db.py` 只引用常量，不重复写版本号。
+
+factor 1.1.0 新增三张元数据表：
+
+- `meta_factor_profile`：因子域、频率、来源、负责人；
+- `meta_factor_validation`：测试/正式环境的验证状态；
+- `meta_factor_promotion_log`：test -> prod 发布审计。
+
+测试库 `market_test.duckdb` / `backtest_test.duckdb` 与正式库使用同一套 DDL。
 
 ## 3. 使用方式
 
