@@ -188,16 +188,21 @@ WAREHOUSE_TABLES: Final[tuple[Table, ...]] = (
 )
 
 _QFQ_SQL: Final[str] = """
+-- 展示用前复权：以最新复权因子归一，历史价格会随未来拆股变化。
+-- 研究请使用 qfq_daily(as_of) 或 v_daily_hfq。
 WITH base AS (
     SELECT d.ts_code, d.trade_date, d.open, d.high, d.low, d.close, d.pre_close,
            d.chg, d.pct_chg, d.vol, d.amount, f.adj_factor
     FROM fact_daily d
     JOIN fact_adj_factor f
       ON f.ts_code = d.ts_code AND f.trade_date = d.trade_date
+    WHERE f.adj_factor > 0
 ),
 last_adj AS (
     SELECT ts_code, arg_max(adj_factor, trade_date) AS adj_last
-    FROM fact_adj_factor GROUP BY ts_code
+    FROM fact_adj_factor
+    WHERE adj_factor > 0
+    GROUP BY ts_code
 )
 SELECT b.ts_code, b.trade_date,
        b.open      * b.adj_factor / l.adj_last AS open,
@@ -206,10 +211,11 @@ SELECT b.ts_code, b.trade_date,
        b.close     * b.adj_factor / l.adj_last AS close,
        b.pre_close * b.adj_factor / l.adj_last AS pre_close,
        b.chg       * b.adj_factor / l.adj_last AS chg,
-       b.pct_chg, b.vol,
-       CAST(b.amount * b.adj_factor / l.adj_last AS DECIMAL(20,4)) AS amount,
+       b.pct_chg,
+       b.vol       * l.adj_last / b.adj_factor AS vol,
+       b.amount,
        b.adj_factor
-FROM base b JOIN last_adj l ON l.ts_code = b.ts_code
+FROM base b JOIN last_adj l ON l.ts_code = b.ts_code AND l.adj_last > 0
 """
 
 _HFQ_SQL: Final[str] = """
@@ -219,16 +225,62 @@ SELECT d.ts_code, d.trade_date,
        d.low       * f.adj_factor AS low,
        d.close     * f.adj_factor AS close,
        d.pre_close * f.adj_factor AS pre_close,
-       d.vol,
-       CAST(d.amount * f.adj_factor AS DECIMAL(20,4)) AS amount,
+       d.vol       / f.adj_factor AS vol,
+       d.amount,
        f.adj_factor
 FROM fact_daily d
 JOIN fact_adj_factor f ON f.ts_code = d.ts_code AND f.trade_date = d.trade_date
+WHERE f.adj_factor > 0
+"""
+
+_QFQ_ASOF_SQL: Final[str] = """
+CREATE OR REPLACE MACRO qfq_daily(as_of DATE) AS TABLE
+WITH base AS (
+    SELECT d.ts_code, d.trade_date, d.open, d.high, d.low, d.close, d.pre_close,
+           d.chg, d.pct_chg, d.vol, d.amount, f.adj_factor
+    FROM fact_daily d
+    JOIN fact_adj_factor f
+      ON f.ts_code = d.ts_code AND f.trade_date = d.trade_date
+    WHERE d.trade_date <= as_of
+      AND f.adj_factor > 0
+),
+last_adj AS (
+    SELECT ts_code, arg_max(adj_factor, trade_date) AS adj_last
+    FROM fact_adj_factor
+    WHERE trade_date <= as_of
+      AND adj_factor > 0
+    GROUP BY ts_code
+)
+SELECT b.ts_code, b.trade_date,
+       b.open      * b.adj_factor / l.adj_last AS open,
+       b.high      * b.adj_factor / l.adj_last AS high,
+       b.low       * b.adj_factor / l.adj_last AS low,
+       b.close     * b.adj_factor / l.adj_last AS close,
+       b.pre_close * b.adj_factor / l.adj_last AS pre_close,
+       b.chg       * b.adj_factor / l.adj_last AS chg,
+       b.pct_chg,
+       b.vol       * l.adj_last / b.adj_factor AS vol,
+       b.amount,
+       b.adj_factor
+FROM base b JOIN last_adj l ON l.ts_code = b.ts_code AND l.adj_last > 0
+"""
+
+_RETURN_SQL: Final[str] = """
+SELECT ts_code, trade_date,
+       CAST(pct_chg AS DOUBLE) / 100.0 AS ret_1d
+FROM fact_daily
+WHERE pct_chg IS NOT NULL
 """
 
 WAREHOUSE_VIEWS: Final[dict[str, str]] = {
     "v_daily_qfq": _QFQ_SQL,
     "v_daily_hfq": _HFQ_SQL,
+    "v_daily_return": _RETURN_SQL,
+}
+
+#: 表宏：``qfq_daily(as_of)`` 提供 PIT 安全的前复权价格。
+WAREHOUSE_MACROS: Final[dict[str, str]] = {
+    "qfq_daily": _QFQ_ASOF_SQL,
 }
 
 # ---------------------------------------------------------------------------
@@ -358,8 +410,8 @@ FROM fact_factor_daily f
 JOIN fact_tradable_flag t
   ON t.ts_code = f.ts_code
  AND t.trade_date = f.trade_date
-WHERE t.is_buyable = TRUE
-   OR t.is_sellable = TRUE
+WHERE f.is_stale = FALSE
+  AND (t.is_buyable = TRUE OR t.is_sellable = TRUE)
 """.strip()
 
 #: 静态视图；``v_factor_wide`` 依赖活跃因子列表，由 init_factor_db 动态创建。

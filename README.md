@@ -38,17 +38,24 @@ quant-db-schema/
 
 | 数据库 | 组件 `meta_schema_version.component` | 当前版本 |
 | --- | --- | --- |
-| `market.duckdb` | `warehouse` | `1.2.0` |
-| `market.duckdb` | `factor` | `1.1.0` |
+| `market.duckdb` | `warehouse` | `1.3.0` |
+| `market.duckdb` | `factor` | `1.2.0` |
 | `backtest.duckdb` | `backtest` | `1.0.0` |
 
 版本常量集中在 `constants.py`，各项目的 `init_*_db.py` 只引用常量，不重复写版本号。
 
-factor 1.1.0 新增三张元数据表：
+warehouse 1.3.0 新增：
 
-- `meta_factor_profile`：因子域、频率、来源、负责人；
-- `meta_factor_validation`：测试/正式环境的验证状态；
-- `meta_factor_promotion_log`：test -> prod 发布审计。
+- `qfq_daily(as_of)` 表宏：PIT 安全前复权；
+- `v_daily_return` 视图：统一 `pct_chg/100` 日收益口径；
+- `v_daily_qfq` / `v_daily_hfq` 的 `vol` 与价格反向调整，`amount` 保持真实成交额。
+
+factor 1.2.0：
+
+- `v_factor_valid` 增加 `is_stale = FALSE`，避免 forward-fill 陈旧值进入消费视图；
+- 1.1.0 的三张元数据表保持不变：`meta_factor_profile`（因子域/频率/来源）、
+  `meta_factor_validation`（测试/正式环境验证状态）、`meta_factor_promotion_log`
+  （test -> prod 发布审计）。
 
 测试库 `market_test.duckdb` / `backtest_test.duckdb` 与正式库使用同一套 DDL。
 
