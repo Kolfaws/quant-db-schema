@@ -8,8 +8,8 @@
 ============  =========================  ==================================
 数据库          组件 (component)            当前版本
 ============  =========================  ==================================
-market.duckdb   ``warehouse``              ``1.2.0``
-market.duckdb   ``factor``                 ``1.1.0``
+market.duckdb   ``warehouse``              ``1.3.0``
+market.duckdb   ``factor``                 ``1.2.0``
 backtest.duckdb ``backtest``               ``1.0.0``
 ============  =========================  ==================================
 """
@@ -25,8 +25,8 @@ WAREHOUSE_COMPONENT: Final[str] = "warehouse"
 FACTOR_COMPONENT: Final[str] = "factor"
 BACKTEST_COMPONENT: Final[str] = "backtest"
 
-WAREHOUSE_SCHEMA_VERSION: Final[str] = "1.2.0"
-FACTOR_SCHEMA_VERSION: Final[str] = "1.1.0"
+WAREHOUSE_SCHEMA_VERSION: Final[str] = "1.3.0"
+FACTOR_SCHEMA_VERSION: Final[str] = "1.2.0"
 BACKTEST_SCHEMA_VERSION: Final[str] = "1.0.0"
 
 # 运行环境：正式库 / 测试库
@@ -109,7 +109,10 @@ MARKET_WAREHOUSE_TABLES: Final[tuple[str, ...]] = (
 MARKET_WAREHOUSE_VIEWS: Final[tuple[str, ...]] = (
     "v_daily_qfq",
     "v_daily_hfq",
+    "v_daily_return",
 )
+
+MARKET_WAREHOUSE_MACROS: Final[tuple[str, ...]] = ("qfq_daily",)
 
 # ---------------------------------------------------------------------------
 # market.duckdb — factor 组件（因子层）

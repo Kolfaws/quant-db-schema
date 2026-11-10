@@ -5,7 +5,13 @@ from __future__ import annotations
 from quant_schema import constants as c
 from quant_schema._ddl import Table, normalise_type
 from quant_schema.backtest_ddl import BACKTEST_TABLES, BACKTEST_VIEWS
-from quant_schema.market_ddl import FACTOR_TABLES, WAREHOUSE_TABLES, WAREHOUSE_VIEWS
+from quant_schema.market_ddl import (
+    FACTOR_STATIC_VIEWS,
+    FACTOR_TABLES,
+    WAREHOUSE_MACROS,
+    WAREHOUSE_TABLES,
+    WAREHOUSE_VIEWS,
+)
 
 
 def _by_name(tables: tuple[Table, ...]) -> dict[str, Table]:
@@ -49,7 +55,19 @@ def test_conflict_keys_match_columns() -> None:
 
 def test_views_declared() -> None:
     assert set(WAREHOUSE_VIEWS) == set(c.MARKET_WAREHOUSE_VIEWS)
+    assert set(WAREHOUSE_MACROS) == set(c.MARKET_WAREHOUSE_MACROS)
     assert set(BACKTEST_VIEWS) == set(c.BACKTEST_VIEWS)
+
+
+def test_v_factor_valid_filters_stale() -> None:
+    sql = FACTOR_STATIC_VIEWS["v_factor_valid"].lower()
+    assert "is_stale = false" in sql
+
+
+def test_qfq_macro_is_point_in_time() -> None:
+    sql = WAREHOUSE_MACROS["qfq_daily"].lower()
+    assert "qfq_daily(as_of date)" in sql
+    assert "trade_date <= as_of" in sql
 
 
 def test_component_versions_are_semver() -> None:
