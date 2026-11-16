@@ -1,5 +1,11 @@
 # quant-db-schema
 
+## Overview
+
+Quant DB Schema is a dependency-free contract package that defines the shared DuckDB schemas for the Quant workspace.
+It provides table metadata, primary keys, and DDL for market.duckdb and backtest.duckdb without opening connections or running queries.
+Other projects import it to keep table names, versions, and write contracts consistent.
+
 Quant 项目的 **schema 契约包**：只有常量与 DDL，没有数据库连接、没有业务逻辑、没有第三方依赖。
 
 - 项目/文件夹：`quant-db-schema`
