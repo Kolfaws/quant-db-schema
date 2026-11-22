@@ -18,7 +18,7 @@ Quant 项目的 **schema 契约包**：只有常量与 DDL，没有数据库连�
 quant-data-pipeline      → market_ddl.py      建 market.duckdb（warehouse + factor）
 quant-backtest-engine    → backtest_ddl.py    建 backtest.duckdb（backtest）
 quant-baseline           → constants.py       只引用表名/主键，不建表
-factor_research          → constants.py       只引用表名/主键，不建表
+quant-factor             → constants.py       只引用表名/主键，不建表
 ```
 
 ## 1. 目录
@@ -82,7 +82,7 @@ uv add --editable ../quant-db-schema
 uv add --editable ../quant-data-pipeline
 uv add --editable ../quant-baseline
 
-# factor_research / quant-factor
+# quant-factor
 uv add --editable ../quant-db-schema
 uv add --editable ../quant-data-pipeline
 ```
@@ -119,3 +119,13 @@ uv run --with pytest pytest tests -q
 ```bash
 python -m pytest tests -q
 ```
+
+## 6. PostgreSQL 行情契约
+
+`quant_schema.postgres_ddl` 定义独立版本的 PostgreSQL 日频结构，包含上市及退市资料、
+交易日历、未复权日线、复权因子、正式因子定义和日频因子值。发布行引用 `control.publication`
+中的批次与观察时间。初始化、采集和 DuckDB 研究提取由
+[quant-data-pipeline](../quant-data-pipeline/README.md#10-postgresql-日频首批) 管理。
+
+`quant_schema.postgres_backtest_ddl` 定义独立版本的回测净值发布结构。每个净值修订引用
+对应的行情发布版本，净值行以 run ID、修订号和交易日定位。

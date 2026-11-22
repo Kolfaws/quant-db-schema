@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from quant_schema import constants as c
 from quant_schema._ddl import Table, normalise_type
 from quant_schema.backtest_ddl import BACKTEST_TABLES, BACKTEST_VIEWS
@@ -12,6 +14,8 @@ from quant_schema.market_ddl import (
     WAREHOUSE_TABLES,
     WAREHOUSE_VIEWS,
 )
+
+README = Path(__file__).resolve().parents[1] / "README.md"
 
 
 def _by_name(tables: tuple[Table, ...]) -> dict[str, Table]:
@@ -57,6 +61,26 @@ def test_views_declared() -> None:
     assert set(WAREHOUSE_VIEWS) == set(c.MARKET_WAREHOUSE_VIEWS)
     assert set(WAREHOUSE_MACROS) == set(c.MARKET_WAREHOUSE_MACROS)
     assert set(BACKTEST_VIEWS) == set(c.BACKTEST_VIEWS)
+    assert set(FACTOR_STATIC_VIEWS) | {"v_factor_wide"} == set(c.MARKET_FACTOR_VIEWS)
+
+
+def test_backtest_column_whitelist_is_subset_of_ddl() -> None:
+    tables = _by_name(BACKTEST_TABLES)
+    for name, columns in c.BACKTEST_TABLE_COLUMNS.items():
+        assert name in tables, f"{name} 不在 backtest DDL 中"
+        assert set(columns) <= set(
+            tables[name].column_names
+        ), f"{name} 的 BACKTEST_TABLE_COLUMNS 含 DDL 不存在的列"
+
+
+def test_readme_versions_match_constants() -> None:
+    text = README.read_text(encoding="utf-8")
+    for version in (
+        c.WAREHOUSE_SCHEMA_VERSION,
+        c.FACTOR_SCHEMA_VERSION,
+        c.BACKTEST_SCHEMA_VERSION,
+    ):
+        assert f"`{version}`" in text, f"README 未同步版本 {version}"
 
 
 def test_v_factor_valid_filters_stale() -> None:
@@ -68,6 +92,15 @@ def test_qfq_macro_is_point_in_time() -> None:
     sql = WAREHOUSE_MACROS["qfq_daily"].lower()
     assert "qfq_daily(as_of date)" in sql
     assert "trade_date <= as_of" in sql
+    # base 与 last_adj 两处都必须按 as_of 截断；只检查一处会漏掉未来复权。
+    assert sql.count("trade_date <= as_of") >= 2
+
+
+def test_v_daily_return_uses_pct_chg() -> None:
+    sql = WAREHOUSE_VIEWS["v_daily_return"].lower()
+    assert "pct_chg" in sql
+    assert "/ 100.0" in sql
+    assert "close" not in sql
 
 
 def test_component_versions_are_semver() -> None:

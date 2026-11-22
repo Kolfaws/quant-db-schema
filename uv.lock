@@ -133,12 +133,16 @@ wheels = [
 name = "quant-db-schema"
 version = "0.1.0"
 source = { editable = "." }
-dependencies = [
+
+[package.dev-dependencies]
+dev = [
     { name = "pre-commit" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pre-commit", specifier = ">=4.7.0" }]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pre-commit", specifier = ">=4.7.0" }]
 
 [[package]]
 name = "virtualenv"
